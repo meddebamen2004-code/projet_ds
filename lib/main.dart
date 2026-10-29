@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
@@ -13,8 +12,8 @@ void main() {
 class ServiceBookingApp extends StatelessWidget {
   const ServiceBookingApp({super.key});
 
-  ThemeData _buildTheme() {
-    final base = ThemeData(
+    ThemeData _buildTheme() {
+    return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
@@ -23,10 +22,6 @@ class ServiceBookingApp extends StatelessWidget {
         surface: AppColors.background,
       ),
       scaffoldBackgroundColor: AppColors.background,
-    );
-    return base.copyWith(
-      textTheme: GoogleFonts.plusJakartaSansTextTheme(base.textTheme)
-          .apply(bodyColor: AppColors.text, displayColor: AppColors.text),
     );
   }
 
