@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/app_colors.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_colors.dart';
 import '../../widgets/app_text_field.dart';
+import '../pro/dashboard_pro.dart';
+import 'forgot_password_page.dart';
+import 'home_client.dart';
+import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -37,18 +42,43 @@ class _LoginPageState extends State<LoginPage> {
     return null;
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    final auth = context.read<AuthProvider>();
-    final ok = await auth.signIn(_emailCtrl.text.trim(), _passCtrl.text);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? 'Connexion réussie' : auth.error ?? 'Erreur')),
+  void _snack(String msg) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(msg)));
+
+  /// The role stored in the database decides which space opens.
+  void _goHome(User user) {
+    final Widget page =
+    user.role == UserRole.pro ? const DashboardPro() : const HomeClient();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => page),
+          (route) => false,
     );
   }
 
-  void _soon(String what) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text('$what : bientôt disponible')));
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    final auth = context.read<AuthProvider>();
+    final ok = await auth.signIn(_emailCtrl.text, _passCtrl.text);
+    if (!mounted) return;
+    if (ok) {
+      _goHome(auth.user!);
+    } else {
+      _snack(auth.error ?? 'Erreur');
+    }
+  }
+
+  Future<void> _openRegister() async {
+    final user = await Navigator.of(context).push<User>(
+      MaterialPageRoute(builder: (_) => const RegisterPage()),
+    );
+    if (user != null && mounted) _goHome(user);
+  }
+
+  void _openForgotPassword() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ForgotPasswordPage(initialEmail: _emailCtrl.text.trim()),
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,8 +89,6 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // hasScrollBody:false => le lien d'inscription est poussé en bas
-            // (équivalent du cadre "Espace" dans Figma).
             SliverFillRemaining(
               hasScrollBody: false,
               child: Padding(
@@ -119,7 +147,7 @@ class _LoginPageState extends State<LoginPage> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: GestureDetector(
-                        onTap: () => _soon('Mot de passe oublié'),
+                        onTap: _openForgotPassword,
                         child: Text('Mot de passe oublié ?',
                             style: textTheme.bodyMedium?.copyWith(
                                 color: AppColors.primary,
@@ -132,10 +160,13 @@ class _LoginPageState extends State<LoginPage> {
                         loading: loading,
                         onPressed: _submit),
                     const SizedBox(height: 12),
+                    // Google sign-in needs an OAuth provider (Google/Firebase):
+                    // not possible with SQLite alone, so it stays a placeholder.
                     AppButton(
                         label: 'Continuer avec Google',
                         outlined: true,
-                        onPressed: () => _soon('Connexion Google')),
+                        onPressed: () =>
+                            _snack('Connexion Google : bientôt disponible')),
                     const Spacer(),
                     const SizedBox(height: 24),
                     Row(
@@ -146,7 +177,7 @@ class _LoginPageState extends State<LoginPage> {
                                 ?.copyWith(color: AppColors.muted)),
                         const SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => _soon('Inscription'),
+                          onTap: _openRegister,
                           child: Text('Créer un compte',
                               style: textTheme.bodyMedium?.copyWith(
                                   color: AppColors.primary,
